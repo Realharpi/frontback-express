@@ -3,9 +3,14 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const admin = require('firebase-admin');
+const { Storage } = require('@google-cloud/storage');
+
 
 admin.initializeApp();
 const db = admin.firestore();
+const storage = new Storage();
+const bucket = storage.bucket('frontback-express.appspot.com'); // Replace with your bucket name
+
 
 const app = express();
 app.use(cors({ origin: true }));
@@ -17,18 +22,12 @@ app.get('/', (req, res) => {
 
 app.post('/update_contacts', async (req, res) => {
   const updatedContacts = req.body;
+  const contactsFile = bucket.file('contacts.json');
 
   try {
-    const contactsRef = db.collection('contacts');
-    // Clear existing contacts
-    const snapshot = await contactsRef.get();
-    snapshot.forEach(doc => {
-      doc.ref.delete();
-    });
-
-    // Add updated contacts
-    updatedContacts.forEach(contact => {
-      contactsRef.add(contact);
+    await contactsFile.save(JSON.stringify(updatedContacts, null, 2), {
+      contentType: 'application/json',
+      public: true,
     });
 
     res.send('Contacts updated successfully');
@@ -38,14 +37,18 @@ app.post('/update_contacts', async (req, res) => {
   }
 });
 
-app.get('/contacts.json', async (req, res) => {
-  try {
-    const contactsRef = db.collection('contacts');
-    const snapshot = await contactsRef.get();
+app.get('/get_contacts', async (req, res) => {
+  const contactsFile = bucket.file('contacts.json');
 
-    const contacts = snapshot.docs.map(doc => doc.data());
+  try {
+    const [fileExists] = await contactsFile.exists();
+    if (!fileExists) {
+      return res.status(404).send('Contacts file not found');
+    }
+
+    const [fileContent] = await contactsFile.download();
     res.setHeader('Cache-Control', 'no-store'); // Prevent caching
-    res.json(contacts);
+    res.send(fileContent.toString());
   } catch (err) {
     console.error("Error GET reading contacts:", err);
     res.status(500).send('Error fetching GET contacts');

@@ -3,7 +3,7 @@ const getRoot = document.querySelector(".root");
 let contacts = [];
 
 // Pulling from backend
-fetch(`/contacts.json?cacheBust=${new Date().getTime()}`) // Add cache-busting query parameter
+fetch(`/get_contacts?cacheBust=${new Date().getTime()}`) // Add cache-busting query parameter
   .then((response) => response.json())
   .then((data) => {
     contacts = data;

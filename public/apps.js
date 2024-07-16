@@ -51,5 +51,5 @@ function updateContactsOnServer(updatedContacts) {
     .then(data => {
       console.log("Contacts updated:", data);
     })
-    .catch(error => console.error("Error updating contacts:", error));
+    .catch(error => console.error("Error with 'apps.js'", error));
 }
